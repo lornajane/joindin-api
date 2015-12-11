@@ -289,4 +289,53 @@ class TalkCommentMapper extends ApiMapper
         $hide_stmt = $this->_db->prepare($hide_sql);
         $result = $hide_stmt->execute(["talk_comment_id" => $comment_id]);
     }
+
+    /**
+     * A reported comment is being moderated
+     * Approved means that the report is valid and the comment will not be shown
+     *
+     * @param int $comment_id the comment that was reported
+     * @param int $user_id the moderating user
+     */
+    public function commentReportApproved($comment_id, $user_id)
+    {
+        $report_sql = "update reported_talk_comments
+            set deciding_user_id = :user_id,
+            deciding_date = NOW(),
+            decision = \"approved\"
+            WHERE talk_comment_id = :talk_comment_id";
+
+        $report_stmt = $this->_db->prepare($report_sql);
+        $result = $report_stmt->execute([
+            "talk_comment_id" => $comment_id,
+            "user_id" => $user_id]);
+
+        return true;
+    }
+    /**
+     * A reported comment is being moderated
+     * Denied means that the report is rejected and the comment reinstated
+     *
+     * @param int $comment_id the comment that was reported
+     * @param int $user_id the moderating user
+     */
+    public function commentReportDenied($comment_id, $user_id)
+    {
+        $report_sql = "update reported_talk_comments
+            set deciding_user_id = :user_id,
+            deciding_date = NOW(),
+            decision = \"denied\"
+            WHERE talk_comment_id = :talk_comment_id";
+
+        $report_stmt = $this->_db->prepare($report_sql);
+        $result = $report_stmt->execute([
+            "talk_comment_id" => $comment_id,
+            "user_id" => $user_id]);
+
+        $show_sql = "update talk_comments
+            set active = 1 where ID = :talk_comment_id";
+        $show_stmt = $this->_db->prepare($show_sql);
+        $result = $show_stmt->execute(["talk_comment_id" => $comment_id]);
+        return true;
+    }
 }
